@@ -14,9 +14,12 @@ export class API {
 		url.searchParams.set("ts", `${Date.now()}${Math.random()}`);
 		url.searchParams.set("version", version);
 		return new Promise((res) => {
-			(chrome as any).runtime.sendMessage(
-				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy }, (response) => {
-					if (response.fetchResponse) return res(response.fetchResponse);
+			chrome.runtime.sendMessage(
+				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy });
+				chrome.runtime.onMessage.addListener(message => {
+					if (message.action === 'fetchResponse') {
+						res(message.response);
+					}
 				})
 		});
 	}
