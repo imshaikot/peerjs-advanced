@@ -6,7 +6,7 @@ import { version } from "../package.json";
 export class API {
 	constructor(private readonly _options: PeerJSOption) {}
 
-	private _buildRequest(method: string): Promise<Response> {
+	private _buildRequest(method: string): Promise<any> {
 		const protocol = this._options.secure ? "https" : "http";
 		const { host, port, path, key } = this._options;
 		const url = new URL(`${protocol}://${host}:${port}${path}${key}/${method}`);
@@ -15,7 +15,7 @@ export class API {
 		url.searchParams.set("version", version);
 		return new Promise((res) => {
 			chrome.runtime.sendMessage(
-				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy });
+				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy, method });
 				chrome.runtime.onMessage.addListener(message => {
 					if (message.action === 'fetchResponse') {
 						res(message.response);
@@ -26,66 +26,72 @@ export class API {
 
 	/** Get a unique ID from the server via XHR and initialize with it. */
 	async retrieveId(): Promise<string> {
-		try {
-			const response = await this._buildRequest("id");
+		const response = await this._buildRequest("id");
+		if (response.type === 'error') throw new Error(response.error);
+		if (response.type === 'id') return response.data;
+		// try {
+		// 	const response = await this._buildRequest("id");
 
-			if (response.status !== 200) {
-				throw new Error(`Error. Status:${response.status}`);
-			}
+		// 	if (response.status !== 200) {
+		// 		throw new Error(`Error. Status:${response.status}`);
+		// 	}
 
-			return response.text();
-		} catch (error) {
-			logger.error("Error retrieving ID", error);
+		// 	return response.text();
+		// } catch (error) {
+		// 	logger.error("Error retrieving ID", error);
 
-			let pathError = "";
+		// 	let pathError = "";
 
-			if (
-				this._options.path === "/" &&
-				this._options.host !== util.CLOUD_HOST
-			) {
-				pathError =
-					" If you passed in a `path` to your self-hosted PeerServer, " +
-					"you'll also need to pass in that same path when creating a new " +
-					"Peer.";
-			}
+		// 	if (
+		// 		this._options.path === "/" &&
+		// 		this._options.host !== util.CLOUD_HOST
+		// 	) {
+		// 		pathError =
+		// 			" If you passed in a `path` to your self-hosted PeerServer, " +
+		// 			"you'll also need to pass in that same path when creating a new " +
+		// 			"Peer.";
+		// 	}
 
-			throw new Error("Could not get an ID from the server." + pathError);
-		}
+		// 	throw new Error("Could not get an ID from the server." + pathError);
+		// }
 	}
 
 	/** @deprecated */
 	async listAllPeers(): Promise<any[]> {
-		try {
-			const response = await this._buildRequest("peers");
+		const response = await this._buildRequest("id");
+		if (response.type === 'error') throw new Error(response.error);
+		if (response.type === 'peers') return Promise.resolve(response.data);
+		// try {
+		// 	const response = await this._buildRequest("peers");
 
-			if (response.status !== 200) {
-				if (response.status === 401) {
-					let helpfulError = "";
+		// 	if (response.status !== 200) {
+		// 		if (response.status === 401) {
+		// 			let helpfulError = "";
 
-					if (this._options.host === util.CLOUD_HOST) {
-						helpfulError =
-							"It looks like you're using the cloud server. You can email " +
-							"team@peerjs.com to enable peer listing for your API key.";
-					} else {
-						helpfulError =
-							"You need to enable `allow_discovery` on your self-hosted " +
-							"PeerServer to use this feature.";
-					}
+		// 			if (this._options.host === util.CLOUD_HOST) {
+		// 				helpfulError =
+		// 					"It looks like you're using the cloud server. You can email " +
+		// 					"team@peerjs.com to enable peer listing for your API key.";
+		// 			} else {
+		// 				helpfulError =
+		// 					"You need to enable `allow_discovery` on your self-hosted " +
+		// 					"PeerServer to use this feature.";
+		// 			}
 
-					throw new Error(
-						"It doesn't look like you have permission to list peers IDs. " +
-							helpfulError,
-					);
-				}
+		// 			throw new Error(
+		// 				"It doesn't look like you have permission to list peers IDs. " +
+		// 					helpfulError,
+		// 			);
+		// 		}
 
-				throw new Error(`Error. Status:${response.status}`);
-			}
+		// 		throw new Error(`Error. Status:${response.status}`);
+		// 	}
 
-			return response.json();
-		} catch (error) {
-			logger.error("Error retrieving list peers", error);
+		// 	return response.json();
+		// } catch (error) {
+		// 	logger.error("Error retrieving list peers", error);
 
-			throw new Error("Could not get list peers from the server." + error);
-		}
+		// 	throw new Error("Could not get list peers from the server." + error);
+		// }
 	}
 }
