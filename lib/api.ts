@@ -16,7 +16,7 @@ export class API {
 		return new Promise((res) => {
 			(chrome as any).runtime.sendMessage(
 				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy }, (response) => {
-					if (response.fetch) return res(response.fetch);
+					if (response.fetchResponse) return res(response.fetchResponse);
 				})
 		});
 	}
