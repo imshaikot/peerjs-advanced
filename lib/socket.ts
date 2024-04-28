@@ -40,7 +40,7 @@ export class Socket extends EventEmitter {
 		}
 
 		// Request WebSocket instance from background script
-		(browser as any).runtime.sendMessage(
+		(chrome as any).runtime.sendMessage(
 			{ action: "requestWebSocket", wsUrl, version },
 			(response) => {
 				if (response && response.websocket) {

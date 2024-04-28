@@ -14,7 +14,7 @@ export class API {
 		url.searchParams.set("ts", `${Date.now()}${Math.random()}`);
 		url.searchParams.set("version", version);
 		return new Promise((res) => {
-			(browser as any).runtime.sendMessage(
+			(chrome as any).runtime.sendMessage(
 				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy }, (response) => {
 					if (response.fetch) return res(response.fetch);
 				})
