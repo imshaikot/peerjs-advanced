@@ -13,8 +13,11 @@ export class API {
 		// TODO: Why timestamp, why random?
 		url.searchParams.set("ts", `${Date.now()}${Math.random()}`);
 		url.searchParams.set("version", version);
-		return fetch(url.href, {
-			referrerPolicy: this._options.referrerPolicy,
+		return new Promise((res) => {
+			(browser as any).runtime.sendMessage(
+				{ action: "requestPeerId", url, version, referrerPolicy: this._options.referrerPolicy }, (response) => {
+					if (response.fetch) return res(response.fetch);
+				})
 		});
 	}
 

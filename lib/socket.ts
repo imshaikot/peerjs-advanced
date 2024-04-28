@@ -39,49 +39,61 @@ export class Socket extends EventEmitter {
 			return;
 		}
 
-		this._socket = new WebSocket(wsUrl + "&version=" + version);
-		this._disconnected = false;
+		// Request WebSocket instance from background script
+		(browser as any).runtime.sendMessage(
+			{ action: "requestWebSocket", wsUrl, version },
+			(response) => {
+				if (response && response.websocket) {
+					this._socket = response.websocket;
+					this._disconnected = false;
 
-		this._socket.onmessage = (event) => {
-			let data;
+					this._socket.onmessage = (event) => {
+						let data;
 
-			try {
-				data = JSON.parse(event.data);
-				logger.log("Server message received:", data);
-			} catch (e) {
-				logger.log("Invalid server message", event.data);
-				return;
-			}
+						try {
+							data = JSON.parse(event.data);
+							logger.log("Server message received:", data);
+						} catch (e) {
+							logger.log("Invalid server message", event.data);
+							return;
+						}
 
-			this.emit(SocketEventType.Message, data);
-		};
+						this.emit(SocketEventType.Message, data);
+					};
 
-		this._socket.onclose = (event) => {
-			if (this._disconnected) {
-				return;
-			}
+					this._socket.onclose = (event) => {
+						if (this._disconnected) {
+							return;
+						}
 
-			logger.log("Socket closed.", event);
+						logger.log("Socket closed.", event);
 
-			this._cleanup();
-			this._disconnected = true;
+						this._cleanup();
+						this._disconnected = true;
 
-			this.emit(SocketEventType.Disconnected);
-		};
+						this.emit(SocketEventType.Disconnected);
+					};
 
-		// Take care of the queue of connections if necessary and make sure Peer knows
-		// socket is open.
-		this._socket.onopen = () => {
-			if (this._disconnected) {
-				return;
-			}
+					// Take care of the queue of connections if necessary and make sure Peer knows
+					// socket is open.
+					this._socket.onopen = () => {
+						if (this._disconnected) {
+							return;
+						}
 
-			this._sendQueuedMessages();
+						this._sendQueuedMessages();
 
-			logger.log("Socket open");
+						logger.log("Socket open");
 
-			this._scheduleHeartbeat();
-		};
+						this._scheduleHeartbeat();
+					};
+				} else {
+					console.error(
+						"Failed to obtain WebSocket instance from background script",
+					);
+				}
+			},
+		);
 	}
 
 	private _scheduleHeartbeat(): void {
